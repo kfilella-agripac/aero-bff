@@ -1,0 +1,19 @@
+parameters:
+    spring_backend_url: '%env(SPRING_BACKEND_URL)%'
+    spring_internal_secret: '%env(SPRING_INTERNAL_SECRET)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Kernel.php'
+
+    App\Service\SpringBackendClient:
+        arguments:
+            $springBackendUrl: '%spring_backend_url%'
+            $internalSecret: '%spring_internal_secret%'
