@@ -1,5 +1,5 @@
-# Aero-BFF: Gateway API (Symfony 7.4 / PHP 8.2 CLI)
-FROM php:8.2-cli
+# Aero-BFF: Gateway API (Symfony 7.4 / PHP 8.4 CLI - patched 8.4.27)
+FROM php:8.4-cli
 
 # Dependencias mínimas del sistema para API Gateway
 RUN apt-get update && apt-get install -y --no-install-recommends \
