@@ -1,0 +1,30 @@
+services:
+  bff:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aero-bff
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: "${APP_DEBUG:-1}"
+      APP_SECRET: ${APP_SECRET:-32a8f89c623910c66dbb7c0627581177}
+      SPRING_BACKEND_URL: ${SPRING_BACKEND_URL:-http://host.docker.internal:8080/api/internal}
+      SPRING_INTERNAL_SECRET: ${SPRING_INTERNAL_SECRET:-saero-internal-secret-dev-2026}
+      APP_INSTALL_DEPS: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BFF_PORT:-8000}:8000"
+    volumes:
+      - .:/var/www/html
+      - aero_bff_vendor:/var/www/html/vendor
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:8000/api/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  aero_bff_vendor:
