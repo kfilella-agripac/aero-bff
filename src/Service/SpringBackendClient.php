@@ -57,6 +57,13 @@ class SpringBackendClient
             $options['query'] = $incomingRequest->query->all();
         }
 
+        // Pasar headers de autenticación del cliente si existen
+        foreach (['authorization', 'x-api-token'] as $authHeader) {
+            if ($incomingRequest->headers->has($authHeader)) {
+                $options['headers'][$authHeader] = $incomingRequest->headers->get($authHeader);
+            }
+        }
+
         // Si es POST/PUT/PATCH, reenviar body
         if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             $contentType = $incomingRequest->headers->get('Content-Type', '');
