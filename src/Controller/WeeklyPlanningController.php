@@ -40,6 +40,12 @@ class WeeklyPlanningController extends AbstractController
         return $this->springClient->forward($request, "/flight-schedules/week/{$week}/year/{$year}/request-unlock");
     }
 
+    #[Route('/flight-schedules/week/{week}/year/{year}/send-approval-email', name: 'send_approval_email', requirements: ['week' => '\d+', 'year' => '\d+'], methods: ['POST'])]
+    public function sendApprovalEmail(int $week, int $year, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/week/{$week}/year/{$year}/send-approval-email");
+    }
+
     #[Route('/weekly-plannings/unlock-requests', name: 'unlock_requests', methods: ['GET'])]
     public function unlockRequests(Request $request): Response
     {

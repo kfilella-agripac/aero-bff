@@ -88,6 +88,24 @@ class FlightScheduleController extends AbstractController
         return $this->springClient->forward($request, "/flight-schedules/{$id}/approve");
     }
 
+    #[Route('/{id}/sync-history', name: 'sync_history', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function syncHistory(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/sync-history");
+    }
+
+    #[Route('/{id}/syncs', name: 'syncs', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function syncs(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/syncs");
+    }
+
+    #[Route('/{id}/retry-sync', name: 'retry_sync', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function retrySync(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/retry-sync");
+    }
+
     #[Route('/{id}', name: 'item', requirements: ['id' => '\d+'], methods: ['GET', 'PUT', 'DELETE'])]
     public function item(int $id, Request $request): Response
     {
