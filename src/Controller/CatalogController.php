@@ -252,4 +252,25 @@ class CatalogController extends AbstractController
     {
         return $this->springClient->forward($request, "/catalogs/settings/{$key}");
     }
+
+    // =========================================================================
+    // PRODUCTS (FASE 2)
+    // =========================================================================
+    #[Route('/products', name: 'products_index', methods: ['GET', 'POST'])]
+    public function products(Request $request): Response
+    {
+        return $this->springClient->forward($request, '/catalogs/products');
+    }
+
+    #[Route('/products/{id}/restore', name: 'products_restore', methods: ['POST'])]
+    public function restoreProduct(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/products/{$id}/restore");
+    }
+
+    #[Route('/products/{id}', name: 'products_item', requirements: ['id' => '\d+'], methods: ['GET', 'PUT', 'DELETE'])]
+    public function productItem(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/products/{$id}");
+    }
 }
