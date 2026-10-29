@@ -190,6 +190,24 @@ class CatalogController extends AbstractController
         return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/validate-documents");
     }
 
+    #[Route('/pilotos/{id}/tachometer-limits', name: 'pilotos_tachometer_limits', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pilotoTachometerLimits(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/tachometer-limits");
+    }
+
+    #[Route('/pilotos/{id}/licenses', name: 'pilotos_licenses', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pilotoLicenses(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/licenses");
+    }
+
+    #[Route('/pilotos/{id}/medical-certificates', name: 'pilotos_medical_certificates', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pilotoMedicalCertificates(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/medical-certificates");
+    }
+
     #[Route('/pilotos/{id}/restore', name: 'pilotos_restore', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function pilotoRestore(int $id, Request $request): Response
     {

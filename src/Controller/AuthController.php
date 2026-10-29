@@ -22,6 +22,7 @@ class AuthController extends AbstractController
     }
 
     #[Route('/me', name: 'me', methods: ['GET'])]
+    #[Route('/user', name: 'user', methods: ['GET'])]
     public function me(Request $request): Response
     {
         return $this->springClient->forward($request, '/auth/me');
