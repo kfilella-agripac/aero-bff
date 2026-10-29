@@ -6,7 +6,6 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -57,11 +56,18 @@ class SpringBackendClient
             $options['query'] = $incomingRequest->query->all();
         }
 
-        // Si es POST/PUT/PATCH, reenviar body
+        // Pasar headers de autenticación e identidad del cliente si existen
+        foreach (['authorization', 'x-api-token', 'x-user-id', 'x-user-role'] as $authHeader) {
+            if ($incomingRequest->headers->has($authHeader)) {
+                $options['headers'][$authHeader] = $incomingRequest->headers->get($authHeader);
+            }
+        }
+
+        // Si es POST/PUT/PATCH/DELETE, reenviar body JSON si aplica
         if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
-            $contentType = $incomingRequest->headers->get('Content-Type', '');
-            if (str_contains($contentType, 'application/json')) {
-                $options['body'] = $incomingRequest->getContent();
+            $rawContent = $incomingRequest->getContent();
+            if ($rawContent !== '') {
+                $options['body'] = $rawContent;
                 $options['headers']['Content-Type'] = 'application/json';
             }
         }
