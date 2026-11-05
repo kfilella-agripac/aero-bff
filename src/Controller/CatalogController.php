@@ -145,6 +145,12 @@ class CatalogController extends AbstractController
         return $this->springClient->forward($request, "/catalogs/aeronaves/{$id}/tachometer");
     }
 
+    #[Route('/aeronaves/{id}/tachometer-history', name: 'aeronaves_tachometer_history', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function aeronaveTachometerHistory(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/aeronaves/{$id}/tachometer-history");
+    }
+
     #[Route('/aeronaves/{id}/validate-documents', name: 'aeronaves_validate_docs', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function aeronaveValidateDocuments(int $id, Request $request): Response
     {
