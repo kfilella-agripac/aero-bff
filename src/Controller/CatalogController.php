@@ -298,9 +298,5 @@ class CatalogController extends AbstractController
         return $this->springClient->forward($request, "/catalogs/products/{$id}");
     }
 
-    #[Route('/novedad-tipos', name: 'novedad_tipos_index', methods: ['GET'])]
-    public function novedadTipos(Request $request): Response
-    {
-        return $this->springClient->forward($request, '/catalogs/novedad-tipos');
-    }
+    // /novedad-tipos se movió a NovedadController (Fase 4.4: CRUD completo).
 }
