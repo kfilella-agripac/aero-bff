@@ -145,6 +145,12 @@ class CatalogController extends AbstractController
         return $this->springClient->forward($request, "/catalogs/aeronaves/{$id}/tachometer");
     }
 
+    #[Route('/aeronaves/{id}/tachometer-history', name: 'aeronaves_tachometer_history', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function aeronaveTachometerHistory(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/aeronaves/{$id}/tachometer-history");
+    }
+
     #[Route('/aeronaves/{id}/validate-documents', name: 'aeronaves_validate_docs', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function aeronaveValidateDocuments(int $id, Request $request): Response
     {
@@ -196,16 +202,40 @@ class CatalogController extends AbstractController
         return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/tachometer-limits");
     }
 
-    #[Route('/pilotos/{id}/licenses', name: 'pilotos_licenses', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route('/pilotos/{id}/licenses', name: 'pilotos_licenses', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function pilotoLicenses(int $id, Request $request): Response
     {
         return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/licenses");
     }
 
-    #[Route('/pilotos/{id}/medical-certificates', name: 'pilotos_medical_certificates', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route('/pilotos/{id}/licenses/{licenseId}', name: 'pilotos_license_item', requirements: ['id' => '\d+', 'licenseId' => '\d+'], methods: ['PUT', 'DELETE'])]
+    public function pilotoLicenseItem(int $id, int $licenseId, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/licenses/{$licenseId}");
+    }
+
+    #[Route('/pilotos/{id}/licenses/{licenseId}/restore', name: 'pilotos_license_restore', requirements: ['id' => '\d+', 'licenseId' => '\d+'], methods: ['POST'])]
+    public function pilotoLicenseRestore(int $id, int $licenseId, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/licenses/{$licenseId}/restore");
+    }
+
+    #[Route('/pilotos/{id}/medical-certificates', name: 'pilotos_medical_certificates', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function pilotoMedicalCertificates(int $id, Request $request): Response
     {
         return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/medical-certificates");
+    }
+
+    #[Route('/pilotos/{id}/medical-certificates/{certId}', name: 'pilotos_medical_certificate_item', requirements: ['id' => '\d+', 'certId' => '\d+'], methods: ['PUT', 'DELETE'])]
+    public function pilotoMedicalCertificateItem(int $id, int $certId, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/medical-certificates/{$certId}");
+    }
+
+    #[Route('/pilotos/{id}/medical-certificates/{certId}/restore', name: 'pilotos_medical_certificate_restore', requirements: ['id' => '\d+', 'certId' => '\d+'], methods: ['POST'])]
+    public function pilotoMedicalCertificateRestore(int $id, int $certId, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/catalogs/pilotos/{$id}/medical-certificates/{$certId}/restore");
     }
 
     #[Route('/pilotos/{id}/restore', name: 'pilotos_restore', requirements: ['id' => '\d+'], methods: ['POST'])]

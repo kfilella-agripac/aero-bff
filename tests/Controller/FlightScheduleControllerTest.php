@@ -53,4 +53,88 @@ class FlightScheduleControllerTest extends WebTestCase
         $this->assertTrue($conflictData['has_conflicts']);
         $this->assertSame('PILOT_CONFLICT', $conflictData['code']);
     }
+
+    public function testPrevueloAndTachometerHistoryEndpointsForwardToSpring(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $mockHttpClient = new MockHttpClient([
+            new MockResponse(json_encode([
+                'has_prevuelo' => true,
+                'aircraft_type' => 'cessna',
+                'is_airworthy' => true,
+                'status' => 'apto',
+            ]), ['http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json']]),
+            new MockResponse(json_encode([
+                'data' => [
+                    [
+                        'id' => 1,
+                        'aeronave_id' => 1,
+                        'tachometer_start' => '1500.00',
+                        'tachometer_end' => '1501.50',
+                        'difference' => '1.50',
+                        'source_type' => 'flight',
+                    ],
+                ],
+                'meta' => ['current_page' => 1, 'total' => 1],
+            ]), ['http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json']]),
+        ]);
+
+        static::getContainer()->set(HttpClientInterface::class, $mockHttpClient);
+
+        $client->request('GET', '/api/flight-schedules/10/prevuelo');
+        $this->assertResponseIsSuccessful();
+        $prevueloData = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($prevueloData['has_prevuelo']);
+        $this->assertTrue($prevueloData['is_airworthy']);
+
+        $client->request('GET', '/api/aeronaves/1/tachometer-history');
+        $this->assertResponseIsSuccessful();
+        $historyData = json_decode($client->getResponse()->getContent(), true);
+        $this->assertCount(1, $historyData['data']);
+        $this->assertSame('1.50', $historyData['data'][0]['difference']);
+    }
+
+    public function testFlightsPrevuelosAndVuelosDiaProxyRoutesForwardToSpring(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $mockHttpClient = new MockHttpClient([
+            new MockResponse(json_encode([
+                'success' => true,
+                'data' => [
+                    'aeronave_tacometer' => 1250.5,
+                    'last_flight_tacometer' => null,
+                    'can_add_flights' => true,
+                ],
+            ]), ['http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json']]),
+            new MockResponse(json_encode([
+                'success' => true,
+                'data' => ['id' => 1, 'flight_number' => 1, 'tacometro_salida' => 1250.5, 'tacometro_llegada' => 1252.0],
+            ]), ['http_code' => 201, 'response_headers' => ['Content-Type' => 'application/json']]),
+            new MockResponse(json_encode([
+                'success' => true,
+                'data' => ['schedule' => ['id' => 1], 'vuelos_dia' => []],
+            ]), ['http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json']]),
+        ]);
+
+        static::getContainer()->set(HttpClientInterface::class, $mockHttpClient);
+
+        $client->request('GET', '/api/flight-schedules/1/flights/latest-tacometer');
+        $this->assertResponseIsSuccessful();
+        $tacData = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($tacData['data']['can_add_flights']);
+
+        $client->request('POST', '/api/flight-schedules/1/flights', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['tacometro_salida' => 1250.5, 'tacometro_llegada' => 1252.0]));
+        $this->assertResponseStatusCodeSame(201);
+
+        $client->request('GET', '/api/flight-schedules/1/vuelos-dia');
+        $this->assertResponseIsSuccessful();
+        $vueloDiaData = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($vueloDiaData['success']);
+    }
 }
