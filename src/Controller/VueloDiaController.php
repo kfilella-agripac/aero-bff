@@ -28,6 +28,12 @@ class VueloDiaController extends AbstractController
         return $this->springClient->forward($request, "/vuelos-dia/prefill/{$flightScheduleId}");
     }
 
+    #[Route('/{id}/firma/{role}', name: 'firma', requirements: ['id' => '\d+', 'role' => 'mecanico|piloto'], methods: ['GET'])]
+    public function firma(int $id, string $role, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/vuelos-dia/{$id}/firma/{$role}");
+    }
+
     #[Route('/{id}', name: 'item', requirements: ['id' => '\d+'], methods: ['GET', 'PUT', 'DELETE'])]
     public function item(int $id, Request $request): Response
     {
