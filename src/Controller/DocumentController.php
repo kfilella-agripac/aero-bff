@@ -9,11 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Fase 4.4: documentos polimórficos. El archivo se sube al servidor privado con la URL
- * firmada que devuelve presigned-url (ver FileController, /api/files/upload/{token}).
+ * Documentos polimórficos (Fase 4.4). Listado, detalle y borrado delegan a Spring; el archivo
+ * se sube al servidor privado con la URL firmada que devuelve presigned-url
+ * (ver FileController, /api/files/upload/{token}).
  */
 #[Route('/api/documents', name: 'api_documents_')]
-class DocumentController extends AbstractController
+final class DocumentController extends AbstractController
 {
     public function __construct(
         private readonly SpringBackendClient $springClient,
@@ -38,8 +39,14 @@ class DocumentController extends AbstractController
         return $this->springClient->forward($request, '/documents/complete-upload');
     }
 
-    #[Route('/{id}', name: 'item', requirements: ['id' => '\d+'], methods: ['GET', 'DELETE'])]
-    public function item(int $id, Request $request): Response
+    #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function show(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/documents/{$id}");
+    }
+
+    #[Route('/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
+    public function destroy(int $id, Request $request): Response
     {
         return $this->springClient->forward($request, "/documents/{$id}");
     }
