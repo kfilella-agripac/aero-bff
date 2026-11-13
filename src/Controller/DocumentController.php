@@ -9,8 +9,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Fase 4.4: documentos polimórficos. El archivo viaja del navegador directo a S3 con la
- * URL prefirmada; el BFF solo reenvía JSON.
+ * Fase 4.4: documentos polimórficos. El archivo se sube al servidor privado con la URL
+ * firmada que devuelve presigned-url (ver FileController, /api/files/upload/{token}).
  */
 #[Route('/api/documents', name: 'api_documents_')]
 class DocumentController extends AbstractController

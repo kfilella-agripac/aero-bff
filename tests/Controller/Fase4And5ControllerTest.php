@@ -178,6 +178,112 @@ class Fase4And5ControllerTest extends WebTestCase
             ));
     }
 
+    public function testSignedFileRoutesStreamToSpringWithoutSession(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $calls = [];
+        $mock = new MockHttpClient(function (string $method, string $url, array $options) use (&$calls): MockResponse {
+            $body = $options['body'] ?? '';
+            if (is_resource($body)) {
+                $body = stream_get_contents($body); // el BFF reenvía la subida como stream
+            } elseif (is_callable($body)) {
+                $content = '';
+                while ('' !== ($part = $body(8192))) {
+                    $content .= $part;
+                }
+                $body = $content;
+            }
+            $calls[] = ['method' => $method, 'path' => parse_url($url, PHP_URL_PATH),
+                'headers' => implode("\n", $options['headers'] ?? []), 'body' => $body];
+
+            if (str_ends_with(parse_url($url, PHP_URL_PATH), '/auth/me')) {
+                return new MockResponse(json_encode(['id' => 3, 'role' => 'fitosanitario']), [
+                    'http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json'],
+                ]);
+            }
+            if ($method === 'PUT') {
+                return new MockResponse('{"message":"Archivo recibido."}', [
+                    'http_code' => 200, 'response_headers' => ['Content-Type' => 'application/json', 'ETag' => '"abc"'],
+                ]);
+            }
+
+            return new MockResponse('%PDF-firma', ['http_code' => 200, 'response_headers' => [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="orden.pdf"',
+            ]]);
+        });
+        static::getContainer()->set(HttpClientInterface::class, $mock);
+
+        $client->request('PUT', '/api/files/upload/eyJvcCI6InB1dCJ9.c2ln', [], [], [
+            'CONTENT_TYPE' => 'application/pdf', 'HTTP_CONTENT_MD5' => 'bWQ1',
+        ], '%PDF-1.4');
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('ETag', '"abc"');
+
+        // Un fitosanitario puede abrir su firma con la URL firmada.
+        $client->request('GET', '/api/files/eyJvcCI6ImdldCJ9.c2ln', [], [], ['HTTP_AUTHORIZATION' => 'Bearer tok-fito']);
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Disposition', 'inline; filename="orden.pdf"');
+        $this->assertSame('%PDF-firma', $client->getInternalResponse()->getContent());
+
+        $client->request('GET', '/api/files/sin-firma');
+        $this->assertResponseStatusCodeSame(404);
+
+        $forwarded = array_values(array_filter($calls, fn (array $c) => !str_ends_with($c['path'], '/auth/me')));
+        $this->assertSame('PUT', $forwarded[0]['method']);
+        $this->assertStringEndsWith('/api/internal/files/upload/eyJvcCI6InB1dCJ9.c2ln', $forwarded[0]['path']);
+        $this->assertSame('%PDF-1.4', $forwarded[0]['body']);
+        $this->assertStringContainsStringIgnoringCase('content-type: application/pdf', $forwarded[0]['headers']);
+        $this->assertStringContainsStringIgnoringCase('content-md5: bWQ1', $forwarded[0]['headers']);
+        $this->assertStringContainsStringIgnoringCase('x-internal-secret:', $forwarded[0]['headers']);
+        $this->assertStringEndsWith('/api/internal/files/eyJvcCI6ImdldCJ9.c2ln', $forwarded[1]['path']);
+    }
+
+    public function testMultipartNovedadAndBlockAreRebuiltForSpring(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $calls = [];
+        $mock = new MockHttpClient(function (string $method, string $url, array $options) use (&$calls): MockResponse {
+            $body = '';
+            if (isset($options['body']) && is_callable($options['body'])) {
+                while ('' !== ($part = ($options['body'])(8192))) {
+                    $body .= $part;
+                }
+            } else {
+                $body = (string) ($options['body'] ?? '');
+            }
+            $calls[] = ['path' => parse_url($url, PHP_URL_PATH), 'headers' => implode("\n", $options['headers'] ?? []), 'body' => $body];
+
+            return new MockResponse('{"id":1}', ['http_code' => 201, 'response_headers' => ['Content-Type' => 'application/json']]);
+        });
+        static::getContainer()->set(HttpClientInterface::class, $mock);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'nov');
+        file_put_contents($tmp, '%PDF-adjunto');
+        $file = new \Symfony\Component\HttpFoundation\File\UploadedFile($tmp, 'informe técnico.pdf', 'application/pdf', null, true);
+
+        $client->request('POST', '/api/novedades', ['aeronave_id' => '2', 'novedad_tipo_id' => '5', 'fecha' => '2026-11-12'],
+            ['documents' => [$file]], ['HTTP_AUTHORIZATION' => 'Bearer tok-jefe', 'CONTENT_TYPE' => 'multipart/form-data']);
+        $this->assertResponseStatusCodeSame(201);
+
+        $client->request('POST', '/api/flight-schedules/9/block', ['novedad_tipo_id' => '3', 'reason' => 'Lluvia intensa en pista'],
+            ['documents' => [$file]], ['HTTP_AUTHORIZATION' => 'Bearer tok-jefe', 'CONTENT_TYPE' => 'multipart/form-data']);
+        $this->assertResponseStatusCodeSame(201);
+
+        $calls = array_values(array_filter($calls, fn (array $c) => !str_ends_with($c['path'], '/auth/me')));
+        foreach ([[0, '/novedades', 'aeronave_id'], [1, '/flight-schedules/9/block', 'reason']] as [$i, $path, $field]) {
+            $call = $calls[$i];
+            $this->assertStringEndsWith('/api/internal' . $path, $call['path']);
+            $this->assertMatchesRegularExpression('/content-type: multipart\/form-data; boundary=saero-\w+/i', $call['headers']);
+            $this->assertStringContainsStringIgnoringCase('authorization: Bearer tok-jefe', $call['headers']);
+            $this->assertStringContainsString('name="' . $field . '"', $call['body']);
+            $this->assertStringContainsString('name="documents[]"; filename="informe técnico.pdf"', $call['body']);
+            $this->assertStringContainsString("Content-Type: application/pdf\r\n\r\n%PDF-adjunto\r\n", $call['body']);
+        }
+    }
+
     public function testAllowListMatchesLaravelRoutes(): void
     {
         $this->assertTrue(FitosanitarioAccessSubscriber::isAllowed('GET', 'me'));

@@ -31,6 +31,9 @@ class FitosanitarioAccessSubscriber implements EventSubscriberInterface
 
     private const PUBLIC_PATHS = ['/api/health', '/api/login'];
 
+    /** Archivos con URL firmada: los autoriza el token de la ruta, no el rol (p. ej. su propia firma). */
+    private const SIGNED_PREFIX = '/api/files/';
+
     public function __construct(
         private readonly TokenRoleResolver $roleResolver,
     ) {
@@ -49,7 +52,8 @@ class FitosanitarioAccessSubscriber implements EventSubscriberInterface
         }
         $request = $event->getRequest();
         $path = rtrim($request->getPathInfo(), '/');
-        if ($request->isMethod('OPTIONS') || !str_starts_with($path, '/api/') || in_array($path, self::PUBLIC_PATHS, true)) {
+        if ($request->isMethod('OPTIONS') || !str_starts_with($path, '/api/') || in_array($path, self::PUBLIC_PATHS, true)
+            || str_starts_with($path, self::SIGNED_PREFIX)) {
             return;
         }
 

@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Fase 4.4: novedades y catálogo de tipos de novedad.
- * Novedades con adjuntos (multipart) dependen del reenvío multipart de SpringBackendClient.
+ * Las novedades con adjuntos llegan en multipart/form-data (`documents[]`) y se reenvían como tal.
  */
 #[Route('/api', name: 'api_novedades_')]
 class NovedadController extends AbstractController
@@ -23,6 +23,10 @@ class NovedadController extends AbstractController
     #[Route('/novedades', name: 'index_store', methods: ['GET', 'POST'])]
     public function novedades(Request $request): Response
     {
+        if (SpringBackendClient::isMultipart($request)) {
+            return $this->springClient->forwardMultipart($request, '/novedades');
+        }
+
         return $this->springClient->forward($request, '/novedades');
     }
 
