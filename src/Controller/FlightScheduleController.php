@@ -61,6 +61,11 @@ class FlightScheduleController extends AbstractController
     #[Route('/{id}/block', name: 'block', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function block(int $id, Request $request): Response
     {
+        // Bloqueo con documentos de respaldo: multipart con `documents[]`.
+        if (SpringBackendClient::isMultipart($request)) {
+            return $this->springClient->forwardMultipart($request, "/flight-schedules/{$id}/block");
+        }
+
         return $this->springClient->forward($request, "/flight-schedules/{$id}/block");
     }
 
