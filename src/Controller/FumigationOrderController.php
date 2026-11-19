@@ -43,4 +43,10 @@ class FumigationOrderController extends AbstractController
     {
         return $this->springClient->forward($request, "/fitosanitarios/{$id}");
     }
+
+    #[Route('/fumigation-orders/{id}/pdf', name: 'fumigation_orders_pdf', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pdf(int $id, Request $request): Response
+    {
+        return $this->springClient->forwardStream($request, "/fumigation-orders/{$id}/pdf");
+    }
 }

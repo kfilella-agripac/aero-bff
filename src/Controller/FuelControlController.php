@@ -55,4 +55,16 @@ class FuelControlController extends AbstractController
     {
         return $this->springClient->forward($request, '/reports/operations/fuel-anomalies');
     }
+
+    #[Route('/fuel-controls/{id}/pdf', name: 'fuel_controls_pdf', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pdf(int $id, Request $request): Response
+    {
+        return $this->springClient->forwardStream($request, "/fuel-controls/{$id}/pdf");
+    }
+
+    #[Route('/reports/operations/fuel-anomalies/pdf', name: 'fuel_anomalies_pdf', methods: ['POST'])]
+    public function anomaliesPdf(Request $request): Response
+    {
+        return $this->springClient->forwardStream($request, '/reports/operations/fuel-anomalies/pdf');
+    }
 }

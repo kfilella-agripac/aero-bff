@@ -7,6 +7,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -178,10 +179,61 @@ class SpringBackendClient
 
         $headers = [];
         $respHeaders = $springResponse->getHeaders(false);
-        if (isset($respHeaders['content-type'][0])) {
-            $headers['Content-Type'] = $respHeaders['content-type'][0];
+        foreach (['content-type' => 'Content-Type', 'content-disposition' => 'Content-Disposition', 'cache-control' => 'Cache-Control'] as $src => $dst) {
+            if (isset($respHeaders[$src][0])) {
+                $headers[$dst] = $respHeaders[$src][0];
+            }
         }
 
         return new Response($content, $statusCode, $headers);
+    }
+
+    /**
+     * Reenvía una petición hacia Spring y transmite la respuesta binaria en streaming (Excel / PDF).
+     */
+    public function forwardStream(Request $incomingRequest, string $targetPath, array $extraOptions = []): Response
+    {
+        $method = $incomingRequest->getMethod();
+        $options = $extraOptions;
+
+        if ($incomingRequest->query->count() > 0 && !isset($options['query'])) {
+            $options['query'] = $incomingRequest->query->all();
+        }
+
+        foreach (['authorization', 'x-api-token', 'x-user-id', 'x-user-role'] as $authHeader) {
+            if ($incomingRequest->headers->has($authHeader)) {
+                $options['headers'][$authHeader] = $incomingRequest->headers->get($authHeader);
+            }
+        }
+
+        if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+            $rawContent = $incomingRequest->getContent();
+            if ($rawContent !== '') {
+                $options['body'] = $rawContent;
+                $options['headers']['Content-Type'] = 'application/json';
+            }
+        }
+
+        $options['headers']['Accept'] = '*/*';
+        $springResponse = $this->request($method, $targetPath, $options);
+        $statusCode = $springResponse->getStatusCode();
+        $respHeaders = $springResponse->getHeaders(false);
+
+        $headers = [];
+        foreach (['content-type' => 'Content-Type', 'content-disposition' => 'Content-Disposition', 'cache-control' => 'Cache-Control'] as $src => $dst) {
+            if (isset($respHeaders[$src][0])) {
+                $headers[$dst] = $respHeaders[$src][0];
+            }
+        }
+
+        if ($statusCode >= 400) {
+            return new Response($springResponse->getContent(false), $statusCode, $headers);
+        }
+
+        return new StreamedResponse(function () use ($springResponse): void {
+            foreach ($this->httpClient->stream($springResponse) as $chunk) {
+                echo $chunk->getContent();
+            }
+        }, $statusCode, $headers);
     }
 }
