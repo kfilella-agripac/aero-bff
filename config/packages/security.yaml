@@ -23,6 +23,8 @@ security:
     access_control:
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
+        # Archivos con URL firmada por Spring (subida y descarga sin token de sesión).
+        - { path: ^/api/files/, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

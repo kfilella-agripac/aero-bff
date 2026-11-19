@@ -61,6 +61,11 @@ class FlightScheduleController extends AbstractController
     #[Route('/{id}/block', name: 'block', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function block(int $id, Request $request): Response
     {
+        // Bloqueo con documentos de respaldo: multipart con `documents[]`.
+        if (SpringBackendClient::isMultipart($request)) {
+            return $this->springClient->forwardMultipart($request, "/flight-schedules/{$id}/block");
+        }
+
         return $this->springClient->forward($request, "/flight-schedules/{$id}/block");
     }
 
@@ -104,6 +109,30 @@ class FlightScheduleController extends AbstractController
     public function retrySync(int $id, Request $request): Response
     {
         return $this->springClient->forward($request, "/flight-schedules/{$id}/retry-sync");
+    }
+
+    #[Route('/{id}/prevuelo', name: 'prevuelo', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function prevuelo(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/prevuelo");
+    }
+
+    #[Route('/{id}/flights/latest-tacometer', name: 'flights_latest_tacometer', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function latestTacometer(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/flights/latest-tacometer");
+    }
+
+    #[Route('/{id}/flights', name: 'flights', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    public function flights(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/flights");
+    }
+
+    #[Route('/{id}/vuelos-dia', name: 'vuelos_dia', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function vuelosDia(int $id, Request $request): Response
+    {
+        return $this->springClient->forward($request, "/flight-schedules/{$id}/vuelos-dia");
     }
 
     #[Route('/{id}', name: 'item', requirements: ['id' => '\d+'], methods: ['GET', 'PUT', 'DELETE'])]
