@@ -1,0 +1,5 @@
+.git/
+vendor/
+var/cache/
+var/log/
+.phpunit.result.cache
